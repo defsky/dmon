@@ -1,0 +1,39 @@
+app:
+    target: notepad
+    database:
+      mssql:
+        u928:
+          host: "localhost"
+          port: "1433"
+          database: "test"
+          user: "user"
+          password: "pwd"
+          charset: "GB2312"
+        store:
+          host: "localhost"
+          port: "1433"
+          database: "test"
+          user: "user"
+          password: "pwd"
+          charset: "GB2312"
+      mysql:
+        foo:
+          host: "localhost"
+          port: "3306"
+          database: "test"
+          user: "root"
+          password: "root"
+          charset: "utf8"
+        bar:
+          host: "localhost"
+          port: "3306"
+          database: "test"
+          user: "root"
+          password: "root"
+          charset: "utf8"
+      redis:
+        host: "localhost"
+        port: "6379"
+        keys:
+          status: "dashboard:status"
+          qlen: "dashboard:qlen"
