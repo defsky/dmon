@@ -1,2 +1,2 @@
 # dmon
-golang  sqlserver
+sqlserver data monitor in golang
