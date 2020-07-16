@@ -3,9 +3,9 @@ package db
 import (
 	"fmt"
 	"log"
-	"pmon/config"
 	"time"
 
+	"github.com/defsky/dmon/config"
 	"github.com/gomodule/redigo/redis"
 )
 

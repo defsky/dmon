@@ -3,20 +3,20 @@ package db
 import (
 	"fmt"
 	"log"
-	"pmon/config"
 
-	"github.com/jinzhu/gorm"
+	"github.com/defsky/dmon/config"
+	"github.com/xormplus/xorm"
 
 	// mysql driver
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
-	mysqlDBs map[string]*gorm.DB
+	mysqlDBs map[string]*xorm.Engine
 )
 
 func initMysql() {
-	mysqlDBs = make(map[string]*gorm.DB)
+	mysqlDBs = make(map[string]*xorm.Engine)
 
 	dbcfgs := config.GetConfig().DB.Mysql
 
@@ -27,13 +27,13 @@ func initMysql() {
 	log.Println("Init Mysql databases ...")
 
 	for name, cfg := range dbcfgs {
-		url := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=%s&parseTime=True&loc=Local",
+		dsn := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=%s&parseTime=True&loc=Local",
 			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset)
 
-		log.Printf("Connecting %s ...", url)
-		db, err := gorm.Open("mysql", url)
+		log.Printf("Initiatine %s ...", name)
+		db, err := xorm.NewEngine(xorm.MYSQL_DRIVER, dsn)
 		if err != nil {
-			panic(err)
+			log.Println(err)
 		}
 		mysqlDBs[name] = db
 	}

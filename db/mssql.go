@@ -3,20 +3,21 @@ package db
 import (
 	"fmt"
 	"log"
-	"pmon/config"
 
-	"github.com/jinzhu/gorm"
+	"github.com/defsky/dmon/config"
+
+	"github.com/xormplus/xorm"
 
 	// mssql driver
-	_ "github.com/jinzhu/gorm/dialects/mssql"
+	_ "github.com/denisenkom/go-mssqldb"
 )
 
 var (
-	mssqlDBs map[string]*gorm.DB
+	mssqlDBs map[string]*xorm.Engine
 )
 
 func initMssql() {
-	mssqlDBs = make(map[string]*gorm.DB)
+	mssqlDBs = make(map[string]*xorm.Engine)
 
 	dbcfgs := config.GetConfig().DB.Mssql
 
@@ -27,14 +28,14 @@ func initMssql() {
 	log.Println("Init Mssql databases ...")
 
 	for name, cfg := range dbcfgs {
-		url := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s&charset=%s&encrypt=disable",
-			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.Charset)
+		dsn := fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;charset=%s",
+			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.Charset)
 
-		log.Printf("Connecting %s ...", url)
+		log.Printf("Initiating %s ...", name)
 
-		db, err := gorm.Open("mssql", url)
+		db, err := xorm.NewMSSQL(xorm.MSSQL_DRIVER, dsn)
 		if err != nil {
-			panic(err)
+			log.Println(err)
 		}
 
 		mssqlDBs[name] = db

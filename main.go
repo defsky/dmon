@@ -1,61 +1,92 @@
 package main
 
 import (
-	//"log"
-	//"net/http"
-	"fmt"
+	"encoding/json"
+	"log"
 	"os"
-	"pmon/app"
+	"os/signal"
+	"time"
 
-	"github.com/jander/golog/logger"
-	"github.com/kardianos/service"
+	"github.com/defsky/dmon/config"
+	"github.com/defsky/dmon/db"
+	"github.com/gomodule/redigo/redis"
+	"github.com/xormplus/xorm"
 )
 
-/**
-* MAIN函数，程序入口
- */
+// DataItem ...
+type DataItem struct {
+	Name     string `json:"name"`
+	Value    int    `json:"value"`
+	DrillKey string `json:"drillkey"`
+}
+
+var concatSlice = func(s []string, sp string) string {
+	r := ""
+	for _, v := range s {
+		if len(r) > 0 {
+			r += sp
+		}
+		r += v
+	}
+
+	return r
+}
+
+func init() {
+	config.Init()
+	db.Init()
+
+	u9db = db.Mssql("u928")
+	rds = db.Redis()
+}
+
+var u9db *xorm.Engine
+var rds redis.Conn
 
 func main() {
-	svcConfig := &service.Config{
-		Name:        "pmonsvc",         //服务名称
-		DisplayName: "Process Monitor", //服务显示名称
-		Description: "此服务用作监控指定进程是否存活", //服务描述
-	}
+	go waitSignal()
 
-	prg := &app.Program{}
-	s, err := service.New(prg, svcConfig)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	for {
+		dataset := make([]*DataItem, 0)
 
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	if len(os.Args) > 1 {
-		if os.Args[1] == "install" {
-			s.Install()
-			logger.Println("服务安装成功")
-			return
+		if mo := getBadMO(); mo != nil {
+			dataset = append(dataset, mo)
+		}
+		if repeated := getRepeatedDoc(); repeated != nil {
+			dataset = append(dataset, repeated)
+		}
+		if badsite := getBadSiteDoc(); badsite != nil {
+			dataset = append(dataset, badsite)
+		}
+		if item := getNotApprovedDoc(); item != nil {
+			dataset = append(dataset, item)
+		}
+		if item := getBadBom(); item != nil {
+			dataset = append(dataset, item)
 		}
 
-		if os.Args[1] == "remove" {
-			s.Uninstall()
-			logger.Println("服务卸载成功")
-			return
+		datasetjson, err := json.Marshal(dataset)
+		if err != nil {
+			log.Println(err)
+		} else {
+			log.Println("baddoc:", string(datasetjson))
+			rds.Do("SET", "dashboard:baddoc", string(datasetjson))
 		}
 
-		if os.Args[1] == "-h" {
-			fmt.Println(os.Args[0], "[install | remove | -h]")
-			fmt.Println("\tinstall\tInstall program as a service")
-			fmt.Println("\tremove\tRemove service of this program")
-			fmt.Println("\t-h\tDisplay this help message")
-			return
-		}
+		time.Sleep(30 * time.Second)
 	}
+}
 
-	err = s.Run()
-	if err != nil {
-		logger.Error(err)
+func waitSignal() {
+	c := make(chan os.Signal)
+	signal.Notify(c)
+
+	for {
+		s := <-c
+		switch s {
+		case os.Interrupt:
+			log.Println("User Interrupt")
+			os.Exit(0)
+		}
 	}
 }
