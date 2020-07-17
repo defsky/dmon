@@ -13,26 +13,17 @@ import (
 
 var u9db *xorm.Engine
 var rds redis.Conn
+var jobs []JobFunc
 
-// Start ...
+// Start will startup app
 func Start() {
 	for {
 		dataset := make([]*DataItem, 0)
 
-		if mo := getBadMO(); mo != nil {
-			dataset = append(dataset, mo)
-		}
-		if repeated := getRepeatedDoc(); repeated != nil {
-			dataset = append(dataset, repeated)
-		}
-		if badsite := getBadSiteDoc(); badsite != nil {
-			dataset = append(dataset, badsite)
-		}
-		if item := getNotApprovedDoc(); item != nil {
-			dataset = append(dataset, item)
-		}
-		if item := getBadBom(); item != nil {
-			dataset = append(dataset, item)
+		for _, job := range jobs {
+			if data := job(); data != nil {
+				dataset = append(dataset, data)
+			}
 		}
 
 		datasetjson, err := json.Marshal(dataset)
@@ -53,4 +44,7 @@ func init() {
 
 	u9db = db.Mssql("u928")
 	rds = db.Redis()
+
+	registerJob(getBadMO, getRepeatedDoc, getBadSiteDoc,
+		getNotApprovedDoc, getBadBom)
 }

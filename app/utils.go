@@ -7,16 +7,26 @@ type DataItem struct {
 	DrillKey string `json:"drillkey"`
 }
 
-// ColHeadSet ...
+// ColHeadSet is head property set of data table columns
 type ColHeadSet struct {
 	Name  string `json:"name"`
 	Width int    `json:"width"`
 }
 
-// BadDocAgg ...
+// BadDocAgg is top class aggregate data of bad docs
 type BadDocAgg struct {
 	ColNames []*ColHeadSet `json:"colNames"`
 	Data     [][]string    `json:"data"`
+}
+
+// JobFunc is defination of job function
+type JobFunc func() *DataItem
+
+func registerJob(j ...JobFunc) {
+	if jobs == nil {
+		jobs = make([]JobFunc, 0, 5)
+	}
+	jobs = append(jobs, j...)
 }
 
 var concatSlice = func(s []string, sp string) string {

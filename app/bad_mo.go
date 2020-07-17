@@ -8,35 +8,36 @@ import (
 
 func getBadMO() *DataItem {
 	sess := u9db.SQL(`
+select * from (
 	select 
-	a.DocNo,b.DocLineNO,
-	1 as 'ErrorType',
-	'备料未计算成本' as 'ErrorDesc'
-from MO_MO a 
-	inner join MO_MOPickList b on b.MO=a.ID
-	left join Base_Organization c on c.ID = a.Org
-	left join CBO_ItemMaster d on d.ID = b.ItemMaster
-where c.Code = '2017' and a.IsStartMO=0
-	and a.DocState<>3 -- 完工
-	and b.IssueStyle=0 -- 推式
-	and b.IssuedQty < b.ActualReqQty
-	and b.IsCalcCost=0
-	and b.ModifiedOn > ?
-union all
-select 
-	a.DocNo,b.DocLineNO,
-	2 as 'ErrorType',
-	'备料为自制材料' as 'ErrorDesc'
-from MO_MO a 
-	inner join MO_MOPickList b on b.MO=a.ID
-	left join Base_Organization c on c.ID = a.Org
-	left join CBO_ItemMaster d on d.ID = b.ItemMaster
-	left join CBO_Category e on e.ID = d.AssetCategory
-where c.Code = '2017' and a.IsStartMO=0
-	and a.DocState<>3 -- 完工
-	and b.IssueStyle=2 -- 完工倒冲
-	and e.Code = '0106' -- 财务分类-自制材料
-	and a.DocNo like 'DZ%'`, "2020-07-01")
+		a.DocNo,b.DocLineNO,
+		1 as 'ErrorType',
+		'备料未计算成本' as 'ErrorDesc'
+	from MO_MO a 
+		inner join MO_MOPickList b on b.MO=a.ID
+		left join Base_Organization c on c.ID = a.Org
+		left join CBO_ItemMaster d on d.ID = b.ItemMaster
+	where c.Code = '2017' and a.IsStartMO=0
+		and a.DocState<>3 -- 完工
+		and b.IssueStyle=0 -- 推式
+		and b.IssuedQty < b.ActualReqQty
+		and b.IsCalcCost=0
+	union all
+	select 
+		a.DocNo,b.DocLineNO,
+		2 as 'ErrorType',
+		'备料为自制材料' as 'ErrorDesc'
+	from MO_MO a 
+		inner join MO_MOPickList b on b.MO=a.ID
+		left join Base_Organization c on c.ID = a.Org
+		left join CBO_ItemMaster d on d.ID = b.ItemMaster
+		left join CBO_Category e on e.ID = d.AssetCategory
+	where c.Code = '2017' and a.IsStartMO=0
+		and a.DocState<>3 -- 完工
+		and b.IssueStyle=2 -- 完工倒冲
+		and e.Code = '0106' -- 财务分类-自制材料
+		and a.DocNo like 'DZ%'
+) as a order by a.DocNo,a.DocLineNO`)
 
 	records, err := sess.QueryString()
 	if err != nil {
