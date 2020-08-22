@@ -13,6 +13,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20191124224453-732737034ffd
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gomodule/redigo/redis v0.0.0-20200429221454-e14091dffc1b
+	github.com/hooklift/gowsdl v0.4.0 // indirect
 	github.com/jinzhu/gorm v1.9.14
 	github.com/micro/go-micro/v2 v2.9.1
 	github.com/syndtr/goleveldb v1.0.0 // indirect

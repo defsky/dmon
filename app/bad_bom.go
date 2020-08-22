@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -17,7 +16,7 @@ func getBadBom() *DataItem {
 		a1.Code as 'ParentCode',a1.Name as 'ParentName',
 		b.Sequence as 'LineNo',
 		b1.Code as 'CompentCode',b1.Name as 'ComponentName',
-		0 as 'ErrorType','发料方式错误' as 'ErrorDesc'
+		0 as 'ErrorType','发料方式错误' as 'Error'
 	from CBO_BOMMaster a
 		inner join CBO_BOMComponent b on b.BOMMaster = a.ID
 		left join CTE_ItemMaster b1 on b1.ID = b.ItemMaster
@@ -62,43 +61,60 @@ func getBadBom() *DataItem {
 
 	drillkey := "dashboard:baddoc:badbomagg"
 	badBOM := &DataItem{Name: "BOM", DrillKey: drillkey}
+	badBOM.Value = len(records)
 
-	aggCount := make(map[string]int)
-	aggLineno := make(map[string][]string)
+	// aggCount := make(map[string]int)
+	// aggLineno := make(map[string][]string)
 
-	oldErrType := ""
-	for _, row := range records {
-		badBOM.Value++
-		docno := row["ParentCode"]
-		lineno := row["LineNo"]
-		errTypeCurrent := row["ErrorType"]
-		if _, ok := aggCount[docno]; ok {
-			aggCount[docno]++
-			if errTypeCurrent != oldErrType {
-				oldErrType = errTypeCurrent
-				aggLineno[docno] = append(aggLineno[docno], row["ErrorDesc"])
+	// oldErrType := ""
+	// for _, row := range records {
+	// 	badBOM.Value++
+	// 	docno := row["ParentCode"]
+	// 	lineno := row["LineNo"]
+	// 	errTypeCurrent := row["ErrorType"]
+	// 	if _, ok := aggCount[docno]; ok {
+	// 		aggCount[docno]++
+	// 		if errTypeCurrent != oldErrType {
+	// 			oldErrType = errTypeCurrent
+	// 			aggLineno[docno] = append(aggLineno[docno], row["Error"])
+	// 		}
+	// 		aggLineno[docno] = append(aggLineno[docno], lineno)
+	// 		continue
+	// 	}
+	// 	aggCount[docno] = 1
+	// 	oldErrType = row["ErrorType"]
+	// 	aggLineno[docno] = make([]string, 0)
+	// 	aggLineno[docno] = append(aggLineno[docno], row["Error"])
+	// 	aggLineno[docno] = append(aggLineno[docno], lineno)
+	// }
+
+	// data := make([][]string, 0)
+
+	// for k, v := range aggCount {
+	// 	data = append(data, []string{k, fmt.Sprintf("%d 个问题子件, %s", v, concatSlice(aggLineno[k], ","))})
+	// }
+
+	df := NewDataFrame(records)
+	dt := df.GroupBy("ParentCode", "Error").Agg(map[string]AggFunc{
+		"lineno": func(d RealData) string {
+			ret := ""
+			for _, ptr := range d {
+				if len(ret) > 0 {
+					ret += ","
+				}
+				row := (*ptr)
+				ret += row["LineNo"]
 			}
-			aggLineno[docno] = append(aggLineno[docno], lineno)
-			continue
-		}
-		aggCount[docno] = 1
-		oldErrType = row["ErrorType"]
-		aggLineno[docno] = make([]string, 0)
-		aggLineno[docno] = append(aggLineno[docno], row["ErrorDesc"])
-		aggLineno[docno] = append(aggLineno[docno], lineno)
-	}
-
-	data := make([][]string, 0)
-
-	for k, v := range aggCount {
-		data = append(data, []string{k, fmt.Sprintf("%d 个问题子件, %s", v, concatSlice(aggLineno[k], ","))})
-	}
+			return ret
+		},
+	})
 
 	detail := &BadDocAgg{
 		ColNames: []*ColHeadSet{
 			{Name: "母件料号", Width: 150},
-			{Name: "问题描述", Width: 500}},
-		Data: data,
+			{Name: "问题类型", Width: 200},
+			{Name: "关联行号", Width: 200}},
+		Data: dt.Data,
 	}
 
 	badmoaggjson, err := json.Marshal(detail)

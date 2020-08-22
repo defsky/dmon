@@ -10,7 +10,9 @@ import (
 
 func main() {
 	go waitSignal()
-	app.Start()
+
+	app.Init()
+	app.Start(30)
 }
 
 func waitSignal() {

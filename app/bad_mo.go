@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 )
 
 func getBadMO() *DataItem {
@@ -20,7 +21,7 @@ select * from (
 	where c.Code = '2017' and a.IsStartMO=0
 		and a.DocState<>3 -- 完工
 		and b.IssueStyle=0 -- 推式
-		and b.IssuedQty < b.ActualReqQty
+		and b.IssuedQty=0
 		and b.IsCalcCost=0
 	union all
 	select 
@@ -37,6 +38,38 @@ select * from (
 		and b.IssueStyle=2 -- 完工倒冲
 		and e.Code = '0106' -- 财务分类-自制材料
 		and a.DocNo like 'DZ%'
+	union
+	select 
+		a.DocNo,b.DocLineNO,
+		3 as 'ErrorType',
+		'工件发料方式错误' as 'ErrorDesc'
+		--b.CreatedOn,b.CreatedBy,
+		--b.ModifiedOn,b.ModifiedBy,
+		--d.Code,d.Name, b.IsCalcCost,
+		--case b.ConsignProcessItemSrc 
+		--	when 0 then '受托方供料'
+		--	when 1 then '委托方带料(制造业)'
+		--	when 2 then '受托方领料'
+		--	when 3 then '委托方带料(加工贸易)'
+		--end as 'ConsignProcessItemSrc'
+	from MO_MO a 
+		inner join MO_MOPickList b on b.MO=a.ID
+		left join Base_Organization c on c.ID = a.Org
+		left join CBO_ItemMaster d on d.ID = b.ItemMaster
+		left join CBO_Category e on e.ID = d.AssetCategory
+	where c.Code = '2017' and a.IsStartMO=0
+		and a.DocState<>3 -- 完工
+		and b.IssueStyle not in (2,4) -- 完工倒冲，不发料
+		and d.Code like '1101%' --工件
+	union 
+	select '订单提前关闭' as 'DocNo',-1 as 'DocLineNo',
+		4 as 'ErrorType',
+		a.DocNo as 'ErrorDesc'
+	from MO_MO a 
+	where a.IsStartMO=0 and IsMRPorMPS=1
+		and a.DocState=3 and a.CreatedBy='admin' and a.ParentMO is not null
+		and a.TotalCompleteQty <> a.ProductQty
+		and a.CreatedOn >= '2020-04-28'
 ) as a order by a.DocNo,a.DocLineNO`)
 
 	records, err := sess.QueryString()
@@ -46,7 +79,7 @@ select * from (
 	}
 
 	drillkey := "dashboard:baddoc:badmoagg"
-	badMO := &DataItem{Name: "生产备料", DrillKey: drillkey}
+	badMO := &DataItem{Name: "生产订单", DrillKey: drillkey}
 
 	aggCount := make(map[string]int)
 	aggLineno := make(map[string][]string)
@@ -63,7 +96,9 @@ select * from (
 				oldErrType = errTypeCurrent
 				aggLineno[docno] = append(aggLineno[docno], row["ErrorDesc"])
 			}
-			aggLineno[docno] = append(aggLineno[docno], lineno)
+			if n, err := strconv.Atoi(lineno); err == nil && n < 0 {
+				aggLineno[docno] = append(aggLineno[docno], row["ErrorDesc"])
+			}
 			continue
 		}
 		aggCount[docno] = 1
