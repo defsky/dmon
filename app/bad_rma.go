@@ -1,11 +1,10 @@
 package app
 
 import (
-	"encoding/json"
 	"log"
 )
 
-func getBadRMA() *DataItem {
+func getBadRMA() (*DataItem, *BadDocAgg) {
 	sess := u9db.SQL(`
 	WITH CTE_BOM as (
 		select 
@@ -51,7 +50,7 @@ func getBadRMA() *DataItem {
 	records, err := sess.QueryString()
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil
 	}
 
 	drillkey := "dashboard:baddoc:badrmaagg"
@@ -74,14 +73,5 @@ func getBadRMA() *DataItem {
 		Data: data,
 	}
 
-	badrmajson, err := json.Marshal(detail)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-
-	log.Println("bad RMA agg", string(badrmajson))
-	rds.Do("SET", drillkey, string(badrmajson))
-
-	return badRMA
+	return badRMA, detail
 }

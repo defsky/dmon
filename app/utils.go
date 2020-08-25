@@ -1,6 +1,25 @@
 package app
 
-import "log"
+import (
+	"encoding/json"
+	"log"
+)
+
+func uploadToRedis(key string, data interface{}) {
+	d, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	datastr := string(d)
+	log.Println(datastr)
+
+	if _, err := rds.Do("SET", key, datastr); err != nil {
+		log.Printf("upload failed: %s", err)
+	} else {
+		log.Println("upload success")
+	}
+}
 
 // DataItem is top aggregate data for one job
 type DataItem struct {
@@ -22,7 +41,7 @@ type BadDocAgg struct {
 }
 
 // JobHandler is defination of job handler function
-type JobHandler func() *DataItem
+type JobHandler func() (*DataItem, *BadDocAgg)
 
 // Job is a task definations
 type Job struct {

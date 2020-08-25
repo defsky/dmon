@@ -1,12 +1,11 @@
 package app
 
 import (
-	"encoding/json"
 	"log"
 	"time"
 )
 
-func getRepeatedDoc() *DataItem {
+func getRepeatedDoc() (*DataItem, *BadDocAgg) {
 	sess := u9db.SQL(`
 declare @start_date nvarchar(100)
 set @start_date = '2020-01-01'
@@ -80,7 +79,7 @@ having count(a.docno) <> 1`)
 	records, err := sess.QueryString()
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil
 	}
 
 	drillkey := "dashboard:baddoc:repeated"
@@ -106,14 +105,6 @@ having count(a.docno) <> 1`)
 		},
 		Data: data,
 	}
-	detailJSON, err := json.Marshal(detail)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
 
-	log.Println("repeated doc", string(detailJSON))
-	rds.Do("SET", drillkey, string(detailJSON))
-
-	return repeatedDoc
+	return repeatedDoc, detail
 }

@@ -1,12 +1,11 @@
 package app
 
 import (
-	"encoding/json"
 	"log"
 	"strconv"
 )
 
-func getNotApprovedDoc() *DataItem {
+func getNotApprovedDoc() (*DataItem, *BadDocAgg) {
 	sess := u9db.SQL(`
 	select '应收单' as 'doctype', COUNT(1) as 'count' 
 	from AR_ARBillHead a
@@ -73,7 +72,7 @@ func getNotApprovedDoc() *DataItem {
 	records, err := sess.QueryString()
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil
 	}
 
 	drillkey := "dashboard:baddoc:notapproved"
@@ -101,7 +100,7 @@ func getNotApprovedDoc() *DataItem {
 
 		} else {
 			log.Println(err)
-			return nil
+			return nil, nil
 		}
 	}
 
@@ -110,14 +109,5 @@ func getNotApprovedDoc() *DataItem {
 		Data:     data,
 	}
 
-	detailJSON, err := json.Marshal(detail)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-
-	log.Println("not approved doc", string(detailJSON))
-	rds.Do("SET", drillkey, string(detailJSON))
-
-	return doc
+	return doc, detail
 }

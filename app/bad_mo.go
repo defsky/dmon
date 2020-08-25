@@ -1,13 +1,12 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
 )
 
-func getBadMO() *DataItem {
+func getBadMO() (*DataItem, *BadDocAgg) {
 	sess := u9db.SQL(`
 select * from (
 	select 
@@ -75,7 +74,7 @@ select * from (
 	records, err := sess.QueryString()
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil
 	}
 
 	drillkey := "dashboard:baddoc:badmoagg"
@@ -121,14 +120,5 @@ select * from (
 		Data: data,
 	}
 
-	badmoaggjson, err := json.Marshal(detail)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-
-	log.Println("bad mo agg", string(badmoaggjson))
-	rds.Do("SET", drillkey, string(badmoaggjson))
-
-	return badMO
+	return badMO, detail
 }

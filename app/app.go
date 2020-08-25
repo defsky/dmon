@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/defsky/dmon/config"
@@ -29,34 +30,64 @@ func Start(interval int) {
 	for {
 		dataset := make([]*DataItem, 0)
 
+		var wg sync.WaitGroup
+		wg.Add(len(jobs))
+
 		log.Println("开始遍历执行任务清单 ...")
-
 		s := time.Now()
+
 		for _, job := range jobs {
-			log.Printf("执行任务 [%s] ...", job.name)
 
-			st := time.Now()
-			data := job.handler()
-			elapsed := time.Since(st).Seconds()
+			go func(j *Job) {
+				log.Printf("任务启动 [%s] ...", j.name)
 
-			log.Printf("任务 [%s] 执行完毕，耗时 %fs", job.name, elapsed)
+				st := time.Now()
+				item, detail := j.handler()
+				elapsed := time.Since(st).Seconds()
 
-			if data != nil {
-				dataset = append(dataset, data)
-			}
+				if item != nil {
+					dataset = append(dataset, item)
+					if item.Value > 0 {
+						// uploadToRedis(item.DrillKey, detail)
+						d, err := json.Marshal(detail)
+						if err != nil {
+							log.Printf("任务详情 [%s] : %s", j.name, err)
+							return
+						}
+						log.Printf("任务详情 [%s] : %s", j.name, string(d))
+						// var fmtJSON bytes.Buffer
+						// if err = json.Indent(&fmtJSON, d, "", "  "); err != nil {
+						// 	log.Printf("任务详情 [%s] : %s", j.name, err)
+						// } else {
+						// 	log.Printf("任务详情 [%s] : %s", j.name, fmtJSON.String())
+						// }
+
+						if _, err := rds.Do("SET", item.DrillKey, string(d)); err != nil {
+							log.Printf("任务详情 [%s] : 上传失败: %s", j.name, err)
+						} else {
+							log.Printf("任务详情 [%s] : 上传成功", j.name)
+						}
+					} else {
+						log.Printf("任务详情 [%s] : no data", j.name)
+					}
+				}
+				log.Printf("任务结束 [%s]，耗时 %fs", j.name, elapsed)
+				wg.Done()
+			}(job)
 		}
+		wg.Wait()
+		uploadToRedis("dashboard:baddoc", dataset)
 		el := time.Since(s).Seconds()
 
+		// datasetjson, err := json.Marshal(dataset)
+		// if err != nil {
+		// 	log.Println(err)
+		// } else {
+		// 	log.Println("baddoc:", string(datasetjson))
+		// 	rds.Do("SET", "dashboard:baddoc", string(datasetjson))
+		// }
+
 		log.Printf("任务清单执行完毕，总耗时 %fs", el)
-
-		datasetjson, err := json.Marshal(dataset)
-		if err != nil {
-			log.Println(err)
-		} else {
-			log.Println("baddoc:", string(datasetjson))
-			rds.Do("SET", "dashboard:baddoc", string(datasetjson))
-		}
-
 		log.Printf("等待下次触发，休眠 %ds ...", interval)
 		time.Sleep(time.Duration(interval) * time.Second)
 	}

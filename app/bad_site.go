@@ -1,12 +1,11 @@
 package app
 
 import (
-	"encoding/json"
 	"log"
 	"time"
 )
 
-func getBadSiteDoc() *DataItem {
+func getBadSiteDoc() (*DataItem, *BadDocAgg) {
 	sess := u9db.SQL(`
 	WITH CTE_Customer AS (
 		SELECT a.ID,a.Code,a.Effective_IsEffective, a.Effective_DisableDate,a1.Name 
@@ -41,7 +40,7 @@ func getBadSiteDoc() *DataItem {
 	records, err := sess.QueryString()
 	if err != nil {
 		log.Println(err)
-		return nil
+		return nil, nil
 	}
 
 	drillkey := "dashboard:baddoc:badsite"
@@ -65,14 +64,6 @@ func getBadSiteDoc() *DataItem {
 		},
 		Data: data,
 	}
-	detailJSON, err := json.Marshal(detail)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
 
-	log.Println("bad site doc", string(detailJSON))
-	rds.Do("SET", drillkey, string(detailJSON))
-
-	return badSite
+	return badSite, detail
 }
