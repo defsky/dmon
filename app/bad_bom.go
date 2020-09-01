@@ -62,37 +62,6 @@ func getBadBom() (*DataItem, *BadDocAgg) {
 	badBOM := &DataItem{Name: "BOM", DrillKey: drillkey}
 	badBOM.Value = len(records)
 
-	// aggCount := make(map[string]int)
-	// aggLineno := make(map[string][]string)
-
-	// oldErrType := ""
-	// for _, row := range records {
-	// 	badBOM.Value++
-	// 	docno := row["ParentCode"]
-	// 	lineno := row["LineNo"]
-	// 	errTypeCurrent := row["ErrorType"]
-	// 	if _, ok := aggCount[docno]; ok {
-	// 		aggCount[docno]++
-	// 		if errTypeCurrent != oldErrType {
-	// 			oldErrType = errTypeCurrent
-	// 			aggLineno[docno] = append(aggLineno[docno], row["Error"])
-	// 		}
-	// 		aggLineno[docno] = append(aggLineno[docno], lineno)
-	// 		continue
-	// 	}
-	// 	aggCount[docno] = 1
-	// 	oldErrType = row["ErrorType"]
-	// 	aggLineno[docno] = make([]string, 0)
-	// 	aggLineno[docno] = append(aggLineno[docno], row["Error"])
-	// 	aggLineno[docno] = append(aggLineno[docno], lineno)
-	// }
-
-	// data := make([][]string, 0)
-
-	// for k, v := range aggCount {
-	// 	data = append(data, []string{k, fmt.Sprintf("%d 个问题子件, %s", v, concatSlice(aggLineno[k], ","))})
-	// }
-
 	df := NewDataFrame(records)
 	dt := df.GroupBy("ParentCode", "Error").Agg(map[string]AggFunc{
 		"lineno": func(d RealData) string {

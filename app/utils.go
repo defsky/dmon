@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"log"
+
+	"github.com/defsky/dmon/db"
 )
 
 func uploadToRedis(key string, data interface{}) {
@@ -13,6 +15,9 @@ func uploadToRedis(key string, data interface{}) {
 	}
 	datastr := string(d)
 	log.Println(datastr)
+
+	rds := db.Redis()
+	defer rds.Close()
 
 	if _, err := rds.Do("SET", key, datastr); err != nil {
 		log.Printf("upload failed: %s", err)

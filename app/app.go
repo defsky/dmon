@@ -8,13 +8,10 @@ import (
 
 	"github.com/defsky/dmon/config"
 	"github.com/defsky/dmon/db"
-	"github.com/gomodule/redigo/redis"
 	"github.com/xormplus/xorm"
 )
 
 var u9db *xorm.Engine
-var rds redis.Conn
-
 var jobs []*Job
 
 func registerJob(j ...*Job) {
@@ -39,6 +36,7 @@ func Start(interval int) {
 		for _, job := range jobs {
 
 			go func(j *Job) {
+				defer wg.Done()
 				log.Printf("任务启动 [%s] ...", j.name)
 
 				st := time.Now()
@@ -62,6 +60,9 @@ func Start(interval int) {
 						// 	log.Printf("任务详情 [%s] : %s", j.name, fmtJSON.String())
 						// }
 
+						rds := db.Redis()
+						defer rds.Close()
+
 						if _, err := rds.Do("SET", item.DrillKey, string(d)); err != nil {
 							log.Printf("任务详情 [%s] : 上传失败: %s", j.name, err)
 						} else {
@@ -72,7 +73,7 @@ func Start(interval int) {
 					}
 				}
 				log.Printf("任务结束 [%s]，耗时 %fs", j.name, elapsed)
-				wg.Done()
+
 			}(job)
 		}
 		wg.Wait()
@@ -88,18 +89,38 @@ func Start(interval int) {
 		// }
 
 		log.Printf("任务清单执行完毕，总耗时 %fs", el)
-		log.Printf("等待下次触发，休眠 %ds ...", interval)
-		time.Sleep(time.Duration(interval) * time.Second)
+
+		sleeptime := interval
+		for sleeptime > 0 {
+			log.Printf("休眠中 %ds 后启动 ...", sleeptime)
+
+			step := 0
+			if sleeptime > 600 {
+				step = 300
+			} else if sleeptime > 300 {
+				step = 60
+			} else if sleeptime > 60 {
+				step = 30
+			} else if sleeptime > 5 {
+				step = 5
+			} else {
+				step = 1
+			}
+			sleeptime -= step
+
+			time.Sleep(time.Duration(step) * time.Second)
+		}
 	}
 }
 
 // Init ...
 func Init() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
 	config.Init()
 	db.Init()
 
 	u9db = db.Mssql("u928")
-	rds = db.Redis()
 
 	registerJob(
 		&Job{name: "检查问题生产订单", handler: getBadMO},
