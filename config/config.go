@@ -28,6 +28,7 @@ type mysqlConfig struct {
 	User     string
 	Password string
 	Charset  string
+	Encrypt  string
 }
 
 type mssqlConfig struct {
@@ -37,6 +38,7 @@ type mssqlConfig struct {
 	User     string
 	Password string
 	Charset  string
+	Encrypt  string
 }
 
 type databaseConfig struct {

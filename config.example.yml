@@ -9,6 +9,7 @@ app:
         user: "user"
         password: "pwd"
         charset: "GB2312"
+        encrypt: "disable"
       store:
         host: "localhost"
         port: "1433"
@@ -16,6 +17,7 @@ app:
         user: "user"
         password: "pwd"
         charset: "GB2312"
+        encrypt: "disable"
     mysql:
       foo:
         host: "localhost"
@@ -24,6 +26,7 @@ app:
         user: "root"
         password: "root"
         charset: "utf8"
+        encrypt: "disable"
       bar:
         host: "localhost"
         port: "3306"
@@ -31,6 +34,7 @@ app:
         user: "root"
         password: "root"
         charset: "utf8"
+        encrypt: "disable"
     redis:
       host: "localhost"
       port: "6379"

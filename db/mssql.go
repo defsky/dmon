@@ -28,8 +28,8 @@ func initMssql() {
 	log.Println("Init Mssql databases ...")
 
 	for name, cfg := range dbcfgs {
-		dsn := fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;charset=%s",
-			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.Charset)
+		dsn := fmt.Sprintf("server=%s;port=%s;user id=%s;password=%s;database=%s;charset=%s;encrypt=%s",
+			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.Charset, cfg.Encrypt)
 
 		log.Printf("Initiating %s ...", name)
 
