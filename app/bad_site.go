@@ -35,6 +35,20 @@ func getBadSiteDoc() (*DataItem, *BadDocAgg) {
 			inner join dbo.CBO_Customer b on b.ID = a.Customer
 		where b.Org = 1001703126479896
 			and a.DescFlexField_PrivateDescSeg1 not in ('0','1')
+		UNION
+		select 
+			a.ID,
+			'没有默认位置' as 'Error'
+		from (
+			SELECT 
+				c1.ID,c1.code,
+				convert(int,(c2.IsDefaultBillTo & c2.IsDefaultClaim & c2.IsDefaultContrast & c2.IsDefaultPayment & c2.IsDefaultShipTo)) as 'siteWeight'
+			from dbo.CBO_Customer c1
+				inner join dbo.CBO_CustomerSite c2 on c2.Customer = c1.ID
+			where c1.Org = 1001703126479896
+		) a
+		group by a.ID
+		having SUM(a.siteWeight)<>1
 	) a LEFT JOIN CTE_Customer b on b.ID = a.Customer`)
 
 	records, err := sess.QueryString()
@@ -44,7 +58,7 @@ func getBadSiteDoc() (*DataItem, *BadDocAgg) {
 	}
 
 	drillkey := "dashboard:baddoc:badsite"
-	badSite := &DataItem{Name: "位置类型", DrillKey: drillkey}
+	badSite := &DataItem{Name: "客户档案", DrillKey: drillkey}
 	badSite.Value = len(records)
 
 	data := make([][]string, 0)
@@ -55,12 +69,16 @@ func getBadSiteDoc() (*DataItem, *BadDocAgg) {
 			datestr = d.Format("2006-01-02")
 		}
 
-		data = append(data, []string{row["Code"], row["Name"], row["IsEffective"], datestr, row["Erro"]})
+		data = append(data, []string{row["Code"], row["Name"], row["IsEffective"], datestr, row["Error"]})
 	}
 
 	detail := &BadDocAgg{
 		ColNames: []*ColHeadSet{
-			{},
+			{Name: "客户编码", Width: 100},
+			{Name: "客户名称", Width: 250},
+			{Name: "有效性", Width: 80},
+			{Name: "失效日期", Width: 100},
+			{Name: "问题描述", Width: 200},
 		},
 		Data: data,
 	}

@@ -52,22 +52,22 @@ func getNotApprovedDoc() (*DataItem, *BadDocAgg) {
 	from SM_Ship a
 	where a.[Status] <> 3`)
 
-	lotAdd := u9db.SQL(`
-	with CTE_Supplier as (
-		select a.ID,a.Code,b.Name from CBO_Supplier a inner join CBO_Supplier_Trl b on b.ID = a.ID
-	),
-	CTE_Lot as (
-		select a.id,a.lotcode,a.docno from Lot_LotMaster a
-	)
-	update b
-	set b.invlot = b1.ID
-	from PM_Receivement a 
-		inner join PM_RcvLine b on b.receivement = a.id
-		inner join CTE_Lot b1 on b1.LotCode = b.InvLotCode
-	where a.ReceivementType = 1
-		and a.DescFlexField_PubDescSeg26 <> ''
-		and b.invlot is null and b.InvLotCode <> ''
-		and b1.LotCode is not null`)
+	// lotAdd := u9db.SQL(`
+	// with CTE_Supplier as (
+	// 	select a.ID,a.Code,b.Name from CBO_Supplier a inner join CBO_Supplier_Trl b on b.ID = a.ID
+	// ),
+	// CTE_Lot as (
+	// 	select a.id,a.lotcode,a.docno from Lot_LotMaster a
+	// )
+	// update b
+	// set b.invlot = b1.ID
+	// from PM_Receivement a
+	// 	inner join PM_RcvLine b on b.receivement = a.id
+	// 	inner join CTE_Lot b1 on b1.LotCode = b.InvLotCode
+	// where a.ReceivementType = 1
+	// 	and a.DescFlexField_PubDescSeg26 <> ''
+	// 	and b.invlot is null and b.InvLotCode <> ''
+	// 	and b1.LotCode is not null`)
 
 	records, err := sess.QueryString()
 	if err != nil {
@@ -85,17 +85,17 @@ func getNotApprovedDoc() (*DataItem, *BadDocAgg) {
 				doc.Value += c
 				data = append(data, []string{row["doctype"], row["count"]})
 
-				if row["doctype"] == "采购退货" {
-					if r, err := lotAdd.Execute(); err == nil {
-						if affected, err := r.RowsAffected(); err == nil {
-							log.Printf("采购退货批号已更新，受影响行数: %d", affected)
-						} else {
-							log.Println(err)
-						}
-					} else {
-						log.Println(err)
-					}
-				}
+				// if row["doctype"] == "采购退货" {
+				// 	if r, err := lotAdd.Execute(); err == nil {
+				// 		if affected, err := r.RowsAffected(); err == nil {
+				// 			log.Printf("采购退货批号已更新，受影响行数: %d", affected)
+				// 		} else {
+				// 			log.Println(err)
+				// 		}
+				// 	} else {
+				// 		log.Println(err)
+				// 	}
+				// }
 			}
 
 		} else {

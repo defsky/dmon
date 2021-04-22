@@ -68,7 +68,8 @@ select * from (
 	where a.IsStartMO=0 and IsMRPorMPS=1
 		and a.DocState=3 and a.CreatedBy='admin' and a.ParentMO is not null
 		and a.TotalCompleteQty <> a.ProductQty
-		and a.CreatedOn >= '2020-04-28'
+		-- and a.CreatedOn >= '2020-04-28'
+		and a.ClosedOn >= '2020-09-01'
 ) as a order by a.DocNo,a.DocLineNO`)
 
 	records, err := sess.QueryString()

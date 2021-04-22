@@ -8,7 +8,7 @@ docker: build
 
 .PHONY: run
 run: docker
-	docker run --name dmon-service -d dmon-service
+	docker run --restart=always --name dmon-service -d dmon-service
 
 .PHONY: stop
 stop:
