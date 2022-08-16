@@ -34,7 +34,7 @@ func getBadSiteDoc() (*DataItem, *BadDocAgg) {
 		from dbo.CBO_CustomerSite a
 			inner join dbo.CBO_Customer b on b.ID = a.Customer
 		where b.Org = 1001703126479896
-			and a.DescFlexField_PrivateDescSeg1 not in ('0','1')
+			and a.DescFlexField_PrivateDescSeg1 not in ('0','1','2')
 		UNION
 		select 
 			a.ID,
