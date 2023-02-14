@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 )
 
 func getBadMO() (*DataItem, *BadDocAgg) {
+	now := time.Now()
+	firstDayOfMonth := fmt.Sprintf("%02d-%02d-%02d", now.Year(), now.Month(), 1)
 	sess := u9db.SQL(`
 select * from (
 	select 
@@ -69,7 +72,7 @@ select * from (
 		and a.DocState=3 and a.CreatedBy='admin' and a.ParentMO is not null
 		and a.TotalCompleteQty <> a.ProductQty
 		-- and a.CreatedOn >= '2020-04-28'
-		and a.ClosedOn >= '2020-09-01'
+		and a.ClosedOn >= '` + firstDayOfMonth + `'
 ) as a order by a.DocNo,a.DocLineNO`)
 
 	records, err := sess.QueryString()
