@@ -114,7 +114,13 @@ select * from (
 	data := make([][]string, 0)
 
 	for k, v := range aggCount {
-		data = append(data, []string{k, fmt.Sprintf("合计 %d 行有问题, %s", v, concatSlice(aggLineno[k], ","))})
+		listStr := ""
+		if v > 20 {
+			listStr = concatSlice(aggLineno[k][:20], ",") + "......"
+		} else {
+			listStr = concatSlice(aggLineno[k], ",")
+		}
+		data = append(data, []string{k, fmt.Sprintf("合计 %d 行有问题, %s", v, listStr)})
 	}
 
 	detail := &BadDocAgg{
